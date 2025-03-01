@@ -17,6 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MainTabParamList } from '../navigation/types';
+import { FontAwesome5 } from '@expo/vector-icons';
 
 // Tipo per le transazioni
 interface Transaction {
@@ -50,6 +51,19 @@ interface Reward {
   featured?: boolean;
   available: boolean;
   expiresAt?: string;
+}
+
+// Tipo per i boost
+interface Boost {
+  id: string;
+  title: string;
+  description: string;
+  detailedDescription: string;
+  price: number;
+  icon: string;
+  active: boolean;
+  duration: string;
+  effect: string;
 }
 
 // Dati di esempio per le transazioni
@@ -146,61 +160,77 @@ const DUMMY_TRANSACTIONS: Transaction[] = [
 
 // Dati di esempio per i premi
 const DUMMY_REWARDS: Reward[] = [
+  
+];
+
+// Dati di esempio per i boost
+const AVAILABLE_BOOSTS: Boost[] = [
   {
-    id: '1',
-    title: 'Abbonamento Premium',
-    description: 'Un mese di accesso a tutte le funzionalità premium dell\'app',
-    price: 10.00,
-    image: 'https://ui-avatars.com/api/?name=Premium&background=random&color=fff&size=200',
-    category: 'digital',
-    featured: true,
-    available: true,
-  },
-  {
-    id: '2',
-    title: 'Post in Evidenza',
-    description: 'Il tuo post sarà in evidenza nella home per 24 ore',
+    id: 'coin_boost',
+    title: 'Coin Boost',
+    description: 'Guadagna più coin dalle interazioni',
+    detailedDescription: 'Aumenta del 10% la possibilità di guadagnare coin extra quando ricevi like, commenti o condivisioni sui tuoi post.',
     price: 5.00,
-    image: 'https://ui-avatars.com/api/?name=Post&background=random&color=fff&size=200',
-    category: 'digital',
-    available: true,
+    icon: 'coins',
+    active: false,
+    duration: '24 ore',
+    effect: '+10% probabilità di coin extra'
   },
   {
-    id: '3',
-    title: 'T-Shirt SocialCoin',
-    description: 'T-shirt esclusiva con il logo SocialCoin',
-    price: 25.00,
-    image: 'https://ui-avatars.com/api/?name=Tshirt&background=random&color=fff&size=200',
-    category: 'physical',
-    available: true,
+    id: 'visibility_boost',
+    title: 'Visibility Boost',
+    description: 'Aumenta la visibilità dei tuoi post',
+    detailedDescription: 'I tuoi post avranno una priorità maggiore nel feed degli altri utenti, aumentando la tua visibilità del 20%.',
+    price: 10.00,
+    icon: 'eye',
+    active: false,
+    duration: '48 ore',
+    effect: '+20% visibilità nel feed'
   },
   {
-    id: '4',
-    title: 'Donazione Ambientale',
-    description: 'Dona a un\'organizzazione per la protezione dell\'ambiente',
-    price: 2.00,
-    image: 'https://ui-avatars.com/api/?name=Earth&background=random&color=fff&size=200',
-    category: 'donation',
-    available: true,
+    id: 'engagement_boost',
+    title: 'Engagement Boost',
+    description: 'Ottieni più interazioni sui tuoi contenuti',
+    detailedDescription: 'Aumenta del 15% la probabilità che i tuoi post ricevano like, commenti e condivisioni.',
+    price: 8.00,
+    icon: 'chart-line',
+    active: false,
+    duration: '24 ore',
+    effect: '+15% engagement'
   },
   {
-    id: '5',
-    title: 'Videocall con Creator',
-    description: 'Una videocall di 15 minuti con un creator a tua scelta',
-    price: 50.00,
-    image: 'https://ui-avatars.com/api/?name=Call&background=random&color=fff&size=200',
-    category: 'experience',
-    available: true,
+    id: 'follower_boost',
+    title: 'Follower Boost',
+    description: 'Attira nuovi follower più facilmente',
+    detailedDescription: 'Il tuo profilo apparirà più frequentemente nella sezione "Suggeriti da seguire", aumentando le possibilità di ottenere nuovi follower.',
+    price: 12.00,
+    icon: 'users',
+    active: false,
+    duration: '72 ore',
+    effect: '+25% visibilità nei suggerimenti'
   },
   {
-    id: '6',
-    title: 'Badge Verificato',
-    description: 'Ottieni un badge verificato sul tuo profilo',
-    price: 15.00,
-    image: 'https://ui-avatars.com/api/?name=Badge&background=random&color=fff&size=200',
-    category: 'digital',
-    available: true,
+    id: 'content_boost',
+    title: 'Content Boost',
+    description: 'Migliora la qualità dei tuoi contenuti',
+    detailedDescription: 'Ottieni suggerimenti personalizzati per migliorare i tuoi post e accesso a template esclusivi per creare contenuti di qualità superiore.',
+    price: 7.00,
+    icon: 'star',
+    active: false,
+    duration: '7 giorni',
+    effect: 'Accesso a strumenti premium'
   },
+  {
+    id: 'analytics_boost',
+    title: 'Analytics Boost',
+    description: 'Analisi avanzate sul tuo profilo',
+    detailedDescription: 'Sblocca statistiche dettagliate sul tuo profilo e sui tuoi post per comprendere meglio il tuo pubblico e ottimizzare i tuoi contenuti.',
+    price: 6.00,
+    icon: 'chart-bar',
+    active: false,
+    duration: '7 giorni',
+    effect: 'Statistiche avanzate'
+  }
 ];
 
 type StoreScreenNavigationProp = NativeStackNavigationProp<MainTabParamList, 'Wallet'>;
@@ -211,21 +241,12 @@ const StoreScreen = () => {
   const navigation = useNavigation<StoreScreenNavigationProp>();
   const [transactions, setTransactions] = useState<Transaction[]>(DUMMY_TRANSACTIONS);
   const [rewards, setRewards] = useState<Reward[]>(DUMMY_REWARDS);
-  const [loading, setLoading] = useState(false);
+  const [boosts, setBoosts] = useState<Boost[]>(AVAILABLE_BOOSTS);
+  const [loading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'wallet' | 'rewards'>('wallet');
   const [transactionFilter, setTransactionFilter] = useState<'all' | 'received' | 'sent'>('all');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
-
-  // Categorie disponibili per i premi
-  const categories = [
-    { id: 'all', name: 'Tutti', icon: 'grid' },
-    { id: 'digital', name: 'Digitali', icon: 'cloud' },
-    { id: 'physical', name: 'Fisici', icon: 'cube' },
-    { id: 'donation', name: 'Donazioni', icon: 'heart' },
-    { id: 'experience', name: 'Esperienze', icon: 'star' },
-  ];
+  const [selectedBoost, setSelectedBoost] = useState<Boost | null>(null);
 
   // Imposta l'ID dell'utente corrente per il test
   useEffect(() => {
@@ -268,32 +289,6 @@ const StoreScreen = () => {
     }
   };
 
-  // Funzione per filtrare i premi in base alla categoria selezionata
-  const getFilteredRewards = () => {
-    if (selectedCategory === 'all') {
-      return rewards;
-    }
-    return rewards.filter(reward => reward.category === selectedCategory);
-  };
-
-  // Funzione per ottenere l'icona in base al tipo di transazione
-  const getTransactionIcon = (type: string) => {
-    switch (type) {
-      case 'like':
-        return <Ionicons name="heart" size={24} color="#e74c3c" />;
-      case 'comment':
-        return <Ionicons name="chatbubble" size={24} color="#3498db" />;
-      case 'post_reward':
-        return <Ionicons name="trophy" size={24} color="#f39c12" />;
-      case 'direct_transfer':
-        return <Ionicons name="swap-horizontal" size={24} color="#2ecc71" />;
-      case 'system':
-        return <Ionicons name="gift" size={24} color="#9b59b6" />;
-      default:
-        return <Ionicons name="cash" size={24} color={colors.primary} />;
-    }
-  };
-
   // Funzione per aggiornare le transazioni
   const refreshTransactions = async () => {
     setRefreshing(true);
@@ -304,13 +299,13 @@ const StoreScreen = () => {
     }, 1500);
   };
 
-  // Gestisce l'acquisto di un premio
-  const handlePurchaseReward = (reward: Reward) => {
+  // Gestisce l'attivazione di un boost
+  const handleActivateBoost = (boost: Boost) => {
     // Controlla se l'utente ha abbastanza fondi
-    if (user && reward.price > (user.coins || 0)) {
+    if (user && boost.price > (user.coins || 0)) {
       Alert.alert(
         'Fondi insufficienti',
-        'Non hai abbastanza SocialCoin per acquistare questo premio. Vuoi guadagnare più coin?',
+        'Non hai abbastanza SocialCoin per attivare questo boost. Vuoi guadagnare più coin?',
         [
           {
             text: 'Annulla',
@@ -330,8 +325,8 @@ const StoreScreen = () => {
     
     // Mostra la conferma
     Alert.alert(
-      'Conferma acquisto',
-      `Stai per acquistare "${reward.title}" per ${reward.price.toFixed(2)} SocialCoin. Confermi?`,
+      'Conferma attivazione',
+      `Stai per attivare "${boost.title}" per ${boost.price.toFixed(2)} SocialCoin. Durata: ${boost.duration}. Confermi?`,
       [
         {
           text: 'Annulla',
@@ -340,23 +335,29 @@ const StoreScreen = () => {
         {
           text: 'Conferma',
           onPress: () => {
-            // Simula l'acquisto
-            setLoading(true);
+            // Simula l'attivazione
+            setIsLoading(true);
             
             // In un'app reale, qui chiameremmo un'API
             setTimeout(() => {
-              setLoading(false);
+              setIsLoading(false);
+              
+              // Aggiorna lo stato del boost
+              const updatedBoosts = boosts.map(b => 
+                b.id === boost.id ? { ...b, active: true } : b
+              );
+              setBoosts(updatedBoosts);
               
               // Mostra conferma
               Alert.alert(
-                'Acquisto completato',
-                `Hai acquistato "${reward.title}" con successo!`,
+                'Boost attivato',
+                `Hai attivato "${boost.title}" con successo! Il boost sarà attivo per ${boost.duration}.`,
                 [
                   {
                     text: 'OK',
                     onPress: () => {
-                      // Qui potremmo aggiornare il saldo dell'utente
-                      // e mostrare dettagli sul premio acquistato
+                      // Chiudi i dettagli se aperti
+                      setSelectedBoost(null);
                     },
                   },
                 ]
@@ -427,132 +428,217 @@ const StoreScreen = () => {
     );
   };
 
-  // Renderizza un singolo premio
-  const renderRewardItem = ({ item }: { item: Reward }) => {
+  // Renderizza un singolo boost
+  const renderBoostItem = ({ item }: { item: Boost }) => {
     return (
       <TouchableOpacity
-        style={[styles.rewardCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-        onPress={() => setSelectedReward(item)}
+        style={[styles.boostCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        onPress={() => setSelectedBoost(item)}
       >
-        <Image
-          source={{ uri: item.image }}
-          style={styles.rewardImage}
-          resizeMode="cover"
-        />
+        <View style={[styles.boostIconContainer, { backgroundColor: colors.primary }]}>
+          <FontAwesome5 name={item.icon} size={24} color="white" />
+        </View>
         
-        <View style={styles.rewardContent}>
-          <Text style={[styles.rewardTitle, { color: colors.text }]} numberOfLines={1}>
+        <View style={styles.boostContent}>
+          <Text style={[styles.boostTitle, { color: colors.text }]} numberOfLines={1}>
             {item.title}
           </Text>
           
-          <Text style={[styles.rewardDescription, { color: colors.subtext }]} numberOfLines={2}>
+          <Text style={[styles.boostDescription, { color: colors.subtext }]} numberOfLines={2}>
             {item.description}
           </Text>
           
-          <View style={styles.rewardFooter}>
-            <Text style={[styles.rewardPrice, { color: colors.primary }]}>
+          <View style={styles.boostFooter}>
+            <Text style={[styles.boostPrice, { color: colors.primary }]}>
               {item.price.toFixed(2)} <Text style={{ fontSize: 12 }}>SocialCoin</Text>
             </Text>
             
-            <TouchableOpacity
-              style={[
-                styles.buyButton,
-                { 
-                  backgroundColor: user && item.price <= (user.coins || 0) 
-                    ? colors.primary 
-                    : colors.subtext 
-                }
-              ]}
-              onPress={() => handlePurchaseReward(item)}
-              disabled={!!(user && item.price > (user.coins || 0))}
-            >
-              <Text style={styles.buyButtonText}>Acquista</Text>
-            </TouchableOpacity>
+            {item.active ? (
+              <View style={[styles.activeIndicator, { backgroundColor: colors.success }]}>
+                <Text style={styles.activeText}>ATTIVO</Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.activateButton,
+                  { 
+                    backgroundColor: user && item.price <= (user.coins || 0) 
+                      ? colors.primary 
+                      : colors.subtext 
+                  }
+                ]}
+                onPress={() => handleActivateBoost(item)}
+                disabled={!!(user && item.price > (user.coins || 0))}
+              >
+                <Text style={styles.activateButtonText}>Attiva</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
         
-        {item.featured && (
-          <View style={[styles.featuredBadge, { backgroundColor: colors.primary }]}>
-            <Ionicons name="star" size={12} color="white" />
+        {item.active && (
+          <View style={[styles.activeBadge, { backgroundColor: colors.success }]}>
+            <Ionicons name="checkmark" size={12} color="white" />
           </View>
         )}
       </TouchableOpacity>
     );
   };
 
-  // Renderizza una categoria
-  const renderCategoryItem = ({ item }: { item: typeof categories[0] }) => {
-    const isActive = selectedCategory === item.id;
+  // Mostra i dettagli di un boost selezionato
+  const renderBoostDetails = () => {
+    if (!selectedBoost) return null;
     
     return (
-      <TouchableOpacity
-        style={[
-          styles.categoryButton,
-          { 
-            backgroundColor: isActive ? colors.primary : colors.card,
-            borderColor: isActive ? colors.primary : colors.border
-          }
-        ]}
-        onPress={() => setSelectedCategory(item.id)}
-      >
-        <Ionicons 
-          name={item.icon as any} 
-          size={16} 
-          color={isActive ? 'white' : colors.text} 
-          style={styles.categoryIcon}
-        />
-        <Text 
-          style={[
-            styles.categoryText, 
-            { color: isActive ? 'white' : colors.text }
-          ]}
-        >
-          {item.name}
-        </Text>
-      </TouchableOpacity>
+      <View style={[styles.detailsContainer, { backgroundColor: colors.card }]}>
+        <View style={styles.detailsHeader}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setSelectedBoost(null)}
+          >
+            <Ionicons name="close" size={24} color={colors.text} />
+          </TouchableOpacity>
+          
+          <Text style={[styles.detailsTitle, { color: colors.text }]}>
+            Dettagli Boost
+          </Text>
+          
+          <View style={{ width: 24 }} />
+        </View>
+        
+        <ScrollView style={styles.detailsContent}>
+          <View style={[styles.detailsIconContainer, { backgroundColor: colors.primary }]}>
+            <FontAwesome5 name={selectedBoost.icon} size={40} color="white" />
+          </View>
+          
+          <View style={styles.detailsInfo}>
+            <Text style={[styles.detailsName, { color: colors.text }]}>
+              {selectedBoost.title}
+            </Text>
+            
+            <Text style={[styles.detailsPrice, { color: colors.primary }]}>
+              {selectedBoost.price.toFixed(2)} SocialCoin
+            </Text>
+            
+            <Text style={[styles.detailsDescription, { color: colors.text }]}>
+              {selectedBoost.detailedDescription}
+            </Text>
+            
+            <View style={styles.detailsInfoRow}>
+              <View style={styles.detailsInfoItem}>
+                <Ionicons name="time-outline" size={20} color={colors.primary} />
+                <Text style={[styles.detailsInfoText, { color: colors.subtext }]}>
+                  Durata: {selectedBoost.duration}
+                </Text>
+              </View>
+              
+              <View style={styles.detailsInfoItem}>
+                <Ionicons name="flash-outline" size={20} color={colors.primary} />
+                <Text style={[styles.detailsInfoText, { color: colors.subtext }]}>
+                  Effetto: {selectedBoost.effect}
+                </Text>
+              </View>
+            </View>
+            
+            {selectedBoost.active ? (
+              <View style={[styles.activeBoostBanner, { backgroundColor: colors.success + '20', borderColor: colors.success }]}>
+                <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+                <Text style={[styles.activeBoostText, { color: colors.success }]}>
+                  Boost attualmente attivo
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.detailsActivateButton,
+                  { 
+                    backgroundColor: user && selectedBoost.price <= (user.coins || 0) 
+                      ? colors.primary 
+                      : colors.subtext 
+                  }
+                ]}
+                onPress={() => {
+                  setSelectedBoost(null);
+                  handleActivateBoost(selectedBoost);
+                }}
+                disabled={!!(user && selectedBoost.price > (user.coins || 0))}
+              >
+                {loading ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <Text style={styles.detailsActivateButtonText}>
+                    {user && selectedBoost.price <= (user.coins || 0) 
+                      ? 'Attiva Boost' 
+                      : 'Coin Insufficienti'
+                    }
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+        </ScrollView>
+      </View>
     );
+  };
+
+  // Funzione per ottenere l'icona in base al tipo di transazione
+  const getTransactionIcon = (type: string) => {
+    switch (type) {
+      case 'like':
+        return <Ionicons name="heart" size={24} color="#e74c3c" />;
+      case 'comment':
+        return <Ionicons name="chatbubble" size={24} color="#3498db" />;
+      case 'post_reward':
+        return <Ionicons name="trophy" size={24} color="#f39c12" />;
+      case 'direct_transfer':
+        return <Ionicons name="swap-horizontal" size={24} color="#2ecc71" />;
+      case 'system':
+        return <Ionicons name="gift" size={24} color="#9b59b6" />;
+      default:
+        return <Ionicons name="cash" size={24} color={colors.primary} />;
+    }
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header con saldo */}
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: colors.card }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Store</Text>
+      </View>
+      
+      {/* Saldo */}
       <View style={[styles.balanceContainer, { backgroundColor: colors.card }]}>
-        <View style={styles.balanceContent}>
-          <Text style={[styles.balanceLabel, { color: colors.subtext }]}>
-            Il tuo saldo
-          </Text>
-          <Text style={[styles.balanceAmount, { color: colors.text }]}>
-            {user?.coins?.toFixed(2) || '0.00'} <Text style={styles.coinLabel}>SocialCoin</Text>
-          </Text>
+        <View>
+          <Text style={[styles.balanceLabel, { color: colors.subtext }]}>Il tuo saldo</Text>
+          <View style={styles.balanceRow}>
+            <Text style={[styles.balanceAmount, { color: colors.text }]}>
+              {user?.coins || 100.00}
+            </Text>
+            <Text style={[styles.balanceCurrency, { color: colors.text }]}> SocialCoin</Text>
+          </View>
         </View>
         
         <TouchableOpacity 
           style={[styles.sendButton, { backgroundColor: colors.primary }]}
-          onPress={() => navigation.navigate('SendMoney')}
+          onPress={() => Alert.alert('Invia SocialCoin', 'Funzionalità in arrivo')}
         >
-          <Ionicons name="send" size={18} color="white" />
           <Text style={styles.sendButtonText}>Invia</Text>
         </TouchableOpacity>
       </View>
       
-      {/* Tab switcher */}
-      <View style={[styles.tabContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
         <TouchableOpacity 
           style={[
-            styles.tabButton, 
-            activeTab === 'wallet' && [styles.activeTab, { borderColor: colors.primary }]
+            styles.tab, 
+            activeTab === 'wallet' && [styles.activeTab, { borderBottomColor: colors.primary }]
           ]}
           onPress={() => setActiveTab('wallet')}
         >
-          <Ionicons 
-            name="wallet-outline" 
-            size={20} 
-            color={activeTab === 'wallet' ? colors.primary : colors.text} 
-          />
           <Text 
             style={[
               styles.tabText, 
-              { color: activeTab === 'wallet' ? colors.primary : colors.text }
+              { color: activeTab === 'wallet' ? colors.primary : colors.subtext }
             ]}
           >
             Wallet
@@ -561,20 +647,15 @@ const StoreScreen = () => {
         
         <TouchableOpacity 
           style={[
-            styles.tabButton, 
-            activeTab === 'rewards' && [styles.activeTab, { borderColor: colors.primary }]
+            styles.tab, 
+            activeTab === 'rewards' && [styles.activeTab, { borderBottomColor: colors.primary }]
           ]}
           onPress={() => setActiveTab('rewards')}
         >
-          <Ionicons 
-            name="gift-outline" 
-            size={20} 
-            color={activeTab === 'rewards' ? colors.primary : colors.text} 
-          />
           <Text 
             style={[
               styles.tabText, 
-              { color: activeTab === 'rewards' ? colors.primary : colors.text }
+              { color: activeTab === 'rewards' ? colors.primary : colors.subtext }
             ]}
           >
             Premi
@@ -582,15 +663,15 @@ const StoreScreen = () => {
         </TouchableOpacity>
       </View>
       
-      {/* Contenuto del tab attivo */}
+      {/* Contenuto */}
       {activeTab === 'wallet' ? (
         <>
           {/* Filtri per le transazioni */}
-          <View style={styles.filterContainer}>
+          <View style={styles.filtersContainer}>
             <TouchableOpacity 
               style={[
                 styles.filterButton, 
-                transactionFilter === 'all' && [styles.activeFilter, { backgroundColor: colors.primary }]
+                transactionFilter === 'all' && { backgroundColor: colors.primary }
               ]}
               onPress={() => setTransactionFilter('all')}
             >
@@ -607,7 +688,7 @@ const StoreScreen = () => {
             <TouchableOpacity 
               style={[
                 styles.filterButton, 
-                transactionFilter === 'received' && [styles.activeFilter, { backgroundColor: colors.primary }]
+                transactionFilter === 'received' && { backgroundColor: colors.primary }
               ]}
               onPress={() => setTransactionFilter('received')}
             >
@@ -624,7 +705,7 @@ const StoreScreen = () => {
             <TouchableOpacity 
               style={[
                 styles.filterButton, 
-                transactionFilter === 'sent' && [styles.activeFilter, { backgroundColor: colors.primary }]
+                transactionFilter === 'sent' && { backgroundColor: colors.primary }
               ]}
               onPress={() => setTransactionFilter('sent')}
             >
@@ -639,9 +720,8 @@ const StoreScreen = () => {
             </TouchableOpacity>
           </View>
           
-          {/* Lista delle transazioni */}
+          {/* Lista transazioni */}
           <FlatList
-            key="transactions-list"
             data={getFilteredTransactions()}
             renderItem={renderTransaction}
             keyExtractor={item => item.id}
@@ -650,7 +730,6 @@ const StoreScreen = () => {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={refreshTransactions}
-                colors={[colors.primary]}
                 tintColor={colors.primary}
               />
             }
@@ -666,102 +745,48 @@ const StoreScreen = () => {
         </>
       ) : (
         <>
-          {/* Categorie per i premi */}
-          <FlatList
-            horizontal
-            data={categories}
-            renderItem={renderCategoryItem}
-            keyExtractor={item => item.id}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesList}
-          />
+          {/* Titolo principale */}
+          <View style={styles.headerContainer}>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>
+              Boost Disponibili
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: colors.subtext }]}>
+              Attiva i boost per migliorare la tua esperienza
+            </Text>
+          </View>
           
-          {/* Lista dei premi */}
+          {/* Lista boost */}
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
           ) : (
             <FlatList
-              key="rewards-list"
-              data={getFilteredRewards()}
-              renderItem={renderRewardItem}
+              data={boosts}
+              renderItem={renderBoostItem}
               keyExtractor={item => item.id}
-              numColumns={2}
-              contentContainerStyle={styles.rewardsList}
-              columnWrapperStyle={styles.rewardsRow}
+              contentContainerStyle={styles.boostsList}
+              showsVerticalScrollIndicator={false}
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
-                  <Ionicons name="gift-outline" size={80} color={colors.subtext} />
+                  <Ionicons name="flash-outline" size={80} color={colors.subtext} />
                   <Text style={[styles.emptyText, { color: colors.text }]}>
-                    Nessun premio disponibile in questa categoria
+                    Nessun boost disponibile al momento
                   </Text>
                 </View>
               }
             />
           )}
+          
+          {/* Dettagli boost */}
+          {selectedBoost && renderBoostDetails()}
         </>
       )}
       
-      {/* Modal per i dettagli del premio */}
-      {selectedReward && (
-        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
-          <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={() => setSelectedReward(null)}
-            >
-              <Ionicons name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-            
-            <Image
-              source={{ uri: selectedReward.image }}
-              style={styles.modalImage}
-              resizeMode="cover"
-            />
-            
-            <View style={styles.modalContent}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {selectedReward.title}
-              </Text>
-              
-              <Text style={[styles.modalDescription, { color: colors.subtext }]}>
-                {selectedReward.description}
-              </Text>
-              
-              <View style={styles.modalPriceContainer}>
-                <Text style={[styles.modalPriceLabel, { color: colors.subtext }]}>
-                  Prezzo:
-                </Text>
-                <Text style={[styles.modalPrice, { color: colors.primary }]}>
-                  {selectedReward.price.toFixed(2)} SocialCoin
-                </Text>
-              </View>
-              
-              <TouchableOpacity
-                style={[
-                  styles.modalBuyButton,
-                  { 
-                    backgroundColor: user && selectedReward.price <= (user.coins || 0) 
-                      ? colors.primary 
-                      : colors.subtext 
-                  }
-                ]}
-                onPress={() => {
-                  setSelectedReward(null);
-                  handlePurchaseReward(selectedReward);
-                }}
-                disabled={!!(user && selectedReward.price > (user.coins || 0))}
-              >
-                <Text style={styles.modalBuyButtonText}>
-                  {user && selectedReward.price <= (user.coins || 0) 
-                    ? 'Acquista ora' 
-                    : 'Fondi insufficienti'
-                  }
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+      {/* Indicatore di caricamento */}
+      {loading && (
+        <View style={[styles.loadingOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       )}
     </View>
@@ -772,13 +797,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    padding: 16,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
   balanceContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 20,
-    paddingTop: 60, // Padding aggiuntivo per evitare la Dynamic Island
+    paddingVertical: 12,
+    paddingTop: 16,
   },
   balanceContent: {
     flex: 1,
@@ -788,8 +820,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   balanceAmount: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
+  },
+  balanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  balanceCurrency: {
+    fontSize: 16,
+    fontWeight: 'normal',
   },
   coinLabel: {
     fontSize: 16,
@@ -797,21 +837,21 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
+    alignItems: 'center',
   },
   sendButtonText: {
     color: 'white',
     fontWeight: 'bold',
     marginLeft: 6,
   },
-  tabContainer: {
+  tabsContainer: {
     flexDirection: 'row',
     borderBottomWidth: 1,
   },
-  tabButton: {
+  tab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -825,7 +865,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontWeight: '500',
   },
-  filterContainer: {
+  filtersContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -835,9 +875,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     marginRight: 8,
-  },
-  activeFilter: {
-    borderRadius: 20,
   },
   filterText: {
     fontSize: 14,
@@ -905,89 +942,187 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Stili per i premi
-  categoriesList: {
+  headerContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  categoryButton: {
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+  },
+  boostsList: {
+    padding: 16,
+  },
+  boostCard: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-    borderWidth: 1,
-  },
-  categoryIcon: {
-    marginRight: 4,
-  },
-  categoryText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  rewardsList: {
-    paddingHorizontal: 8,
-    paddingBottom: 20,
-  },
-  rewardsRow: {
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-  },
-  rewardCard: {
-    width: '48%',
     borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
     marginBottom: 16,
-  },
-  rewardImage: {
-    width: '100%',
-    height: 120,
-  },
-  rewardContent: {
+    borderWidth: 1,
     padding: 12,
+    overflow: 'hidden',
   },
-  rewardTitle: {
+  boostIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  boostContent: {
+    flex: 1,
+  },
+  boostTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  rewardDescription: {
-    fontSize: 12,
+  boostDescription: {
+    fontSize: 14,
     marginBottom: 8,
   },
-  rewardFooter: {
+  boostFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  rewardPrice: {
-    fontSize: 14,
+  boostPrice: {
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  buyButton: {
-    paddingHorizontal: 10,
+  activateButton: {
+    paddingHorizontal: 12,
     paddingVertical: 6,
+    borderRadius: 16,
+  },
+  activateButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  activeIndicator: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 12,
   },
-  buyButtonText: {
+  activeText: {
     color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
   },
-  featuredBadge: {
+  activeBadge: {
     position: 'absolute',
     top: 8,
     right: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Stili per il modal
-  modalOverlay: {
+  detailsContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+  },
+  detailsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  closeButton: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  detailsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  detailsContent: {
+    flex: 1,
+  },
+  detailsIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 16,
+    alignSelf: 'center',
+  },
+  detailsInfo: {
+    padding: 16,
+  },
+  detailsName: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  detailsPrice: {
+    fontSize: 18,
+    fontWeight: '500',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  detailsDescription: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  detailsInfoRow: {
+    flexDirection: 'column',
+    marginBottom: 24,
+  },
+  detailsInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  detailsInfoText: {
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  detailsActivateButton: {
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  detailsActivateButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  activeBoostBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  activeBoostText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  loadingOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -995,64 +1130,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000,
-  },
-  modalContainer: {
-    width: '80%',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    zIndex: 1,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalImage: {
-    width: '100%',
-    height: 180,
-  },
-  modalContent: {
-    padding: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  modalDescription: {
-    fontSize: 14,
-    marginBottom: 16,
-    lineHeight: 20,
-  },
-  modalPriceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalPriceLabel: {
-    fontSize: 14,
-    marginRight: 8,
-  },
-  modalPrice: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  modalBuyButton: {
-    paddingVertical: 12,
-    borderRadius: 24,
-    alignItems: 'center',
-  },
-  modalBuyButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    zIndex: 20,
   },
 });
 

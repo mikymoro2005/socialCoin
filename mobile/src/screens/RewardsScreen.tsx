@@ -10,82 +10,93 @@ import {
   Alert,
   ActivityIndicator
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-// Tipo per i premi
-interface Reward {
+// Tipo per i boost
+interface Boost {
   id: string;
   title: string;
   description: string;
+  detailedDescription: string;
   price: number;
-  image: string;
-  category: 'digital' | 'physical' | 'donation' | 'experience';
-  featured?: boolean;
-  available: boolean;
-  expiresAt?: string;
+  icon: string;
+  active: boolean;
+  duration: string;
+  effect: string;
 }
 
-// Dati di esempio per i premi
-const DUMMY_REWARDS: Reward[] = [
+// Dati di esempio per i boost
+const AVAILABLE_BOOSTS: Boost[] = [
   {
-    id: '1',
-    title: 'Abbonamento Premium',
-    description: 'Un mese di accesso a tutte le funzionalità premium dell\'app',
-    price: 10.00,
-    image: 'https://ui-avatars.com/api/?name=Premium&background=random&color=fff&size=200',
-    category: 'digital',
-    featured: true,
-    available: true,
-  },
-  {
-    id: '2',
-    title: 'Post in Evidenza',
-    description: 'Il tuo post sarà in evidenza nella home per 24 ore',
+    id: 'coin_boost',
+    title: 'Coin Boost',
+    description: 'Guadagna più coin dalle interazioni',
+    detailedDescription: 'Aumenta del 10% la possibilità di guadagnare coin extra quando ricevi like, commenti o condivisioni sui tuoi post.',
     price: 5.00,
-    image: 'https://ui-avatars.com/api/?name=Post&background=random&color=fff&size=200',
-    category: 'digital',
-    available: true,
+    icon: 'coins',
+    active: false,
+    duration: '24 ore',
+    effect: '+10% probabilità di coin extra'
   },
   {
-    id: '3',
-    title: 'T-Shirt SocialCoin',
-    description: 'T-shirt esclusiva con il logo SocialCoin',
-    price: 25.00,
-    image: 'https://ui-avatars.com/api/?name=Tshirt&background=random&color=fff&size=200',
-    category: 'physical',
-    available: true,
+    id: 'visibility_boost',
+    title: 'Visibility Boost',
+    description: 'Aumenta la visibilità dei tuoi post',
+    detailedDescription: 'I tuoi post avranno una priorità maggiore nel feed degli altri utenti, aumentando la tua visibilità del 20%.',
+    price: 10.00,
+    icon: 'eye',
+    active: false,
+    duration: '48 ore',
+    effect: '+20% visibilità nel feed'
   },
   {
-    id: '4',
-    title: 'Donazione Ambientale',
-    description: 'Dona a un\'organizzazione per la protezione dell\'ambiente',
-    price: 2.00,
-    image: 'https://ui-avatars.com/api/?name=Earth&background=random&color=fff&size=200',
-    category: 'donation',
-    available: true,
+    id: 'engagement_boost',
+    title: 'Engagement Boost',
+    description: 'Ottieni più interazioni sui tuoi contenuti',
+    detailedDescription: 'Aumenta del 15% la probabilità che i tuoi post ricevano like, commenti e condivisioni.',
+    price: 8.00,
+    icon: 'chart-line',
+    active: false,
+    duration: '24 ore',
+    effect: '+15% engagement'
   },
   {
-    id: '5',
-    title: 'Videocall con Creator',
-    description: 'Una videocall di 15 minuti con un creator a tua scelta',
-    price: 50.00,
-    image: 'https://ui-avatars.com/api/?name=Call&background=random&color=fff&size=200',
-    category: 'experience',
-    available: true,
+    id: 'follower_boost',
+    title: 'Follower Boost',
+    description: 'Attira nuovi follower più facilmente',
+    detailedDescription: 'Il tuo profilo apparirà più frequentemente nella sezione "Suggeriti da seguire", aumentando le possibilità di ottenere nuovi follower.',
+    price: 12.00,
+    icon: 'users',
+    active: false,
+    duration: '72 ore',
+    effect: '+25% visibilità nei suggerimenti'
   },
   {
-    id: '6',
-    title: 'Badge Verificato',
-    description: 'Ottieni un badge verificato sul tuo profilo',
-    price: 15.00,
-    image: 'https://ui-avatars.com/api/?name=Badge&background=random&color=fff&size=200',
-    category: 'digital',
-    available: true,
+    id: 'content_boost',
+    title: 'Content Boost',
+    description: 'Migliora la qualità dei tuoi contenuti',
+    detailedDescription: 'Ottieni suggerimenti personalizzati per migliorare i tuoi post e accesso a template esclusivi per creare contenuti di qualità superiore.',
+    price: 7.00,
+    icon: 'star',
+    active: false,
+    duration: '7 giorni',
+    effect: 'Accesso a strumenti premium'
   },
+  {
+    id: 'analytics_boost',
+    title: 'Analytics Boost',
+    description: 'Analisi avanzate sul tuo profilo',
+    detailedDescription: 'Sblocca statistiche dettagliate sul tuo profilo e sui tuoi post per comprendere meglio il tuo pubblico e ottimizzare i tuoi contenuti.',
+    price: 6.00,
+    icon: 'chart-bar',
+    active: false,
+    duration: '7 giorni',
+    effect: 'Statistiche avanzate'
+  }
 ];
 
 const RewardsScreen = () => {
@@ -94,40 +105,17 @@ const RewardsScreen = () => {
   const navigation = useNavigation();
   
   // Stati
-  const [rewards, setRewards] = useState<Reward[]>(DUMMY_REWARDS);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [boosts, setBoosts] = useState<Boost[]>(AVAILABLE_BOOSTS);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
+  const [selectedBoost, setSelectedBoost] = useState<Boost | null>(null);
   
-  // Categorie disponibili
-  const categories = [
-    { id: 'all', name: 'Tutti', icon: 'grid' },
-    { id: 'digital', name: 'Digitali', icon: 'cloud' },
-    { id: 'physical', name: 'Fisici', icon: 'cube' },
-    { id: 'donation', name: 'Donazioni', icon: 'heart' },
-    { id: 'experience', name: 'Esperienze', icon: 'star' },
-  ];
-  
-  // Filtra i premi in base alla categoria selezionata
-  const getFilteredRewards = () => {
-    if (selectedCategory === 'all') {
-      return rewards;
-    }
-    return rewards.filter(reward => reward.category === selectedCategory);
-  };
-  
-  // Ottieni i premi in evidenza
-  const getFeaturedRewards = () => {
-    return rewards.filter(reward => reward.featured);
-  };
-  
-  // Gestisce l'acquisto di un premio
-  const handlePurchaseReward = (reward: Reward) => {
+  // Gestisce l'attivazione di un boost
+  const handleActivateBoost = (boost: Boost) => {
     // Controlla se l'utente ha abbastanza fondi
-    if (user && reward.price > (user.coins || 0)) {
+    if (user && boost.price > (user.coins || 0)) {
       Alert.alert(
         'Fondi insufficienti',
-        'Non hai abbastanza SocialCoin per acquistare questo premio. Vuoi guadagnare più coin?',
+        'Non hai abbastanza SocialCoin per attivare questo boost. Vuoi guadagnare più coin?',
         [
           {
             text: 'Annulla',
@@ -147,8 +135,8 @@ const RewardsScreen = () => {
     
     // Mostra la conferma
     Alert.alert(
-      'Conferma acquisto',
-      `Stai per acquistare "${reward.title}" per ${reward.price.toFixed(2)} SocialCoin. Confermi?`,
+      'Conferma attivazione',
+      `Stai per attivare "${boost.title}" per ${boost.price.toFixed(2)} SocialCoin. Durata: ${boost.duration}. Confermi?`,
       [
         {
           text: 'Annulla',
@@ -157,23 +145,29 @@ const RewardsScreen = () => {
         {
           text: 'Conferma',
           onPress: () => {
-            // Simula l'acquisto
+            // Simula l'attivazione
             setIsLoading(true);
             
             // In un'app reale, qui chiameremmo un'API
             setTimeout(() => {
               setIsLoading(false);
               
+              // Aggiorna lo stato del boost
+              const updatedBoosts = boosts.map(b => 
+                b.id === boost.id ? { ...b, active: true } : b
+              );
+              setBoosts(updatedBoosts);
+              
               // Mostra conferma
               Alert.alert(
-                'Acquisto completato',
-                `Hai acquistato "${reward.title}" con successo!`,
+                'Boost attivato',
+                `Hai attivato "${boost.title}" con successo! Il boost sarà attivo per ${boost.duration}.`,
                 [
                   {
                     text: 'OK',
                     onPress: () => {
-                      // Qui potremmo aggiornare il saldo dell'utente
-                      // e mostrare dettagli sul premio acquistato
+                      // Chiudi i dettagli se aperti
+                      setSelectedBoost(null);
                     },
                   },
                 ]
@@ -185,178 +179,153 @@ const RewardsScreen = () => {
     );
   };
   
-  // Renderizza un singolo premio
-  const renderRewardItem = ({ item }: { item: Reward }) => {
+  // Renderizza un singolo boost
+  const renderBoostItem = ({ item }: { item: Boost }) => {
     return (
       <TouchableOpacity
-        style={[styles.rewardCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-        onPress={() => setSelectedReward(item)}
+        style={[styles.boostCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        onPress={() => setSelectedBoost(item)}
       >
-        <Image
-          source={{ uri: item.image }}
-          style={styles.rewardImage}
-          resizeMode="cover"
-        />
+        <View style={[styles.boostIconContainer, { backgroundColor: colors.primary }]}>
+          <FontAwesome5 name={item.icon} size={24} color="white" />
+        </View>
         
-        <View style={styles.rewardContent}>
-          <Text style={[styles.rewardTitle, { color: colors.text }]} numberOfLines={1}>
+        <View style={styles.boostContent}>
+          <Text style={[styles.boostTitle, { color: colors.text }]} numberOfLines={1}>
             {item.title}
           </Text>
           
-          <Text style={[styles.rewardDescription, { color: colors.subtext }]} numberOfLines={2}>
+          <Text style={[styles.boostDescription, { color: colors.subtext }]} numberOfLines={2}>
             {item.description}
           </Text>
           
-          <View style={styles.rewardFooter}>
-            <Text style={[styles.rewardPrice, { color: colors.primary }]}>
+          <View style={styles.boostFooter}>
+            <Text style={[styles.boostPrice, { color: colors.primary }]}>
               {item.price.toFixed(2)} <Text style={{ fontSize: 12 }}>SocialCoin</Text>
             </Text>
             
-            <TouchableOpacity
-              style={[
-                styles.buyButton,
-                { 
-                  backgroundColor: user && item.price <= (user.coins || 0) 
-                    ? colors.primary 
-                    : colors.subtext 
-                }
-              ]}
-              onPress={() => handlePurchaseReward(item)}
-              disabled={!!(user && item.price > (user.coins || 0))}
-            >
-              <Text style={styles.buyButtonText}>Acquista</Text>
-            </TouchableOpacity>
+            {item.active ? (
+              <View style={[styles.activeIndicator, { backgroundColor: colors.success }]}>
+                <Text style={styles.activeText}>ATTIVO</Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.activateButton,
+                  { 
+                    backgroundColor: user && item.price <= (user.coins || 0) 
+                      ? colors.primary 
+                      : colors.subtext 
+                  }
+                ]}
+                onPress={() => handleActivateBoost(item)}
+                disabled={!!(user && item.price > (user.coins || 0))}
+              >
+                <Text style={styles.activateButtonText}>Attiva</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
         
-        {item.featured && (
-          <View style={[styles.featuredBadge, { backgroundColor: colors.primary }]}>
-            <Ionicons name="star" size={12} color="white" />
+        {item.active && (
+          <View style={[styles.activeBadge, { backgroundColor: colors.success }]}>
+            <Ionicons name="checkmark" size={12} color="white" />
           </View>
         )}
       </TouchableOpacity>
     );
   };
   
-  // Renderizza una categoria
-  const renderCategoryItem = ({ item }: { item: typeof categories[0] }) => {
-    const isActive = selectedCategory === item.id;
-    
-    return (
-      <TouchableOpacity
-        style={[
-          styles.categoryButton,
-          { 
-            backgroundColor: isActive ? colors.primary : colors.card,
-            borderColor: isActive ? colors.primary : colors.border,
-          }
-        ]}
-        onPress={() => setSelectedCategory(item.id)}
-      >
-        <Ionicons 
-          name={item.icon as any} 
-          size={16} 
-          color={isActive ? 'white' : colors.text} 
-          style={styles.categoryIcon}
-        />
-        <Text 
-          style={[
-            styles.categoryText, 
-            { color: isActive ? 'white' : colors.text }
-          ]}
-        >
-          {item.name}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-  
-  // Mostra i dettagli di un premio selezionato
-  const renderRewardDetails = () => {
-    if (!selectedReward) return null;
+  // Mostra i dettagli di un boost selezionato
+  const renderBoostDetails = () => {
+    if (!selectedBoost) return null;
     
     return (
       <View style={[styles.detailsContainer, { backgroundColor: colors.card }]}>
         <View style={styles.detailsHeader}>
           <TouchableOpacity
             style={styles.closeButton}
-            onPress={() => setSelectedReward(null)}
+            onPress={() => setSelectedBoost(null)}
           >
             <Ionicons name="close" size={24} color={colors.text} />
           </TouchableOpacity>
           
           <Text style={[styles.detailsTitle, { color: colors.text }]}>
-            Dettagli Premio
+            Dettagli Boost
           </Text>
           
           <View style={{ width: 24 }} />
         </View>
         
         <ScrollView style={styles.detailsContent}>
-          <Image
-            source={{ uri: selectedReward.image }}
-            style={styles.detailsImage}
-            resizeMode="cover"
-          />
+          <View style={[styles.detailsIconContainer, { backgroundColor: colors.primary }]}>
+            <FontAwesome5 name={selectedBoost.icon} size={40} color="white" />
+          </View>
           
           <View style={styles.detailsInfo}>
             <Text style={[styles.detailsName, { color: colors.text }]}>
-              {selectedReward.title}
+              {selectedBoost.title}
             </Text>
             
             <Text style={[styles.detailsPrice, { color: colors.primary }]}>
-              {selectedReward.price.toFixed(2)} SocialCoin
+              {selectedBoost.price.toFixed(2)} SocialCoin
             </Text>
             
             <Text style={[styles.detailsDescription, { color: colors.text }]}>
-              {selectedReward.description}
+              {selectedBoost.detailedDescription}
             </Text>
             
-            <View style={styles.detailsCategory}>
-              <Ionicons 
-                name={
-                  selectedReward.category === 'digital' ? 'cloud' :
-                  selectedReward.category === 'physical' ? 'cube' :
-                  selectedReward.category === 'donation' ? 'heart' : 'star'
-                } 
-                size={16} 
-                color={colors.primary} 
-              />
-              <Text style={[styles.detailsCategoryText, { color: colors.subtext }]}>
-                {
-                  selectedReward.category === 'digital' ? 'Premio Digitale' :
-                  selectedReward.category === 'physical' ? 'Premio Fisico' :
-                  selectedReward.category === 'donation' ? 'Donazione' : 'Esperienza'
-                }
-              </Text>
+            <View style={styles.detailsInfoRow}>
+              <View style={styles.detailsInfoItem}>
+                <Ionicons name="time-outline" size={20} color={colors.primary} />
+                <Text style={[styles.detailsInfoText, { color: colors.subtext }]}>
+                  Durata: {selectedBoost.duration}
+                </Text>
+              </View>
+              
+              <View style={styles.detailsInfoItem}>
+                <Ionicons name="flash-outline" size={20} color={colors.primary} />
+                <Text style={[styles.detailsInfoText, { color: colors.subtext }]}>
+                  Effetto: {selectedBoost.effect}
+                </Text>
+              </View>
             </View>
             
-            <TouchableOpacity
-              style={[
-                styles.detailsBuyButton,
-                { 
-                  backgroundColor: user && selectedReward.price <= (user.coins || 0) 
-                    ? colors.primary 
-                    : colors.subtext 
-                }
-              ]}
-              onPress={() => {
-                setSelectedReward(null);
-                handlePurchaseReward(selectedReward);
-              }}
-              disabled={!!(user && selectedReward.price > (user.coins || 0))}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="white" size="small" />
-              ) : (
-                <Text style={styles.detailsBuyButtonText}>
-                  {user && selectedReward.price <= (user.coins || 0) 
-                    ? 'Acquista Premio' 
-                    : 'Coin Insufficienti'
-                  }
+            {selectedBoost.active ? (
+              <View style={[styles.activeBoostBanner, { backgroundColor: colors.success + '20', borderColor: colors.success }]}>
+                <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+                <Text style={[styles.activeBoostText, { color: colors.success }]}>
+                  Boost attualmente attivo
                 </Text>
-              )}
-            </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.detailsActivateButton,
+                  { 
+                    backgroundColor: user && selectedBoost.price <= (user.coins || 0) 
+                      ? colors.primary 
+                      : colors.subtext 
+                  }
+                ]}
+                onPress={() => {
+                  setSelectedBoost(null);
+                  handleActivateBoost(selectedBoost);
+                }}
+                disabled={!!(user && selectedBoost.price > (user.coins || 0))}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <Text style={styles.detailsActivateButtonText}>
+                    {user && selectedBoost.price <= (user.coins || 0) 
+                      ? 'Attiva Boost' 
+                      : 'Coin Insufficienti'
+                    }
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         </ScrollView>
       </View>
@@ -375,87 +344,29 @@ const RewardsScreen = () => {
         </View>
       </View>
       
-      {/* Categorie */}
-      <View style={styles.categoriesContainer}>
-        <FlatList
-          data={categories}
-          renderItem={renderCategoryItem}
-          keyExtractor={item => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesList}
-        />
+      {/* Titolo principale */}
+      <View style={styles.headerContainer}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          Boost Disponibili
+        </Text>
+        <Text style={[styles.headerSubtitle, { color: colors.subtext }]}>
+          Attiva i boost per migliorare la tua esperienza
+        </Text>
       </View>
       
-      {/* Premi in evidenza */}
-      {selectedCategory === 'all' && getFeaturedRewards().length > 0 && (
-        <View style={styles.featuredContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              In Evidenza
-            </Text>
-          </View>
-          
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.featuredList}
-          >
-            {getFeaturedRewards().map(reward => (
-              <TouchableOpacity
-                key={reward.id}
-                style={[styles.featuredCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => setSelectedReward(reward)}
-              >
-                <Image
-                  source={{ uri: reward.image }}
-                  style={styles.featuredImage}
-                  resizeMode="cover"
-                />
-                
-                <View style={styles.featuredContent}>
-                  <Text style={[styles.featuredTitle, { color: colors.text }]} numberOfLines={1}>
-                    {reward.title}
-                  </Text>
-                  
-                  <Text style={[styles.featuredPrice, { color: colors.primary }]}>
-                    {reward.price.toFixed(2)} SocialCoin
-                  </Text>
-                </View>
-                
-                <View style={[styles.featuredBadge, { backgroundColor: colors.primary }]}>
-                  <Ionicons name="star" size={12} color="white" />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-      
-      {/* Lista premi */}
-      <View style={styles.rewardsContainer}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            {selectedCategory === 'all' 
-              ? 'Tutti i Premi' 
-              : categories.find(c => c.id === selectedCategory)?.name || 'Premi'
-            }
-          </Text>
-        </View>
-        
+      {/* Lista boost */}
+      <View style={styles.boostsContainer}>
         <FlatList
-          data={getFilteredRewards()}
-          renderItem={renderRewardItem}
+          data={boosts}
+          renderItem={renderBoostItem}
           keyExtractor={item => item.id}
-          numColumns={2}
-          contentContainerStyle={styles.rewardsList}
-          columnWrapperStyle={styles.rewardsRow}
+          contentContainerStyle={styles.boostsList}
           showsVerticalScrollIndicator={false}
         />
       </View>
       
-      {/* Dettagli premio */}
-      {selectedReward && renderRewardDetails()}
+      {/* Dettagli boost */}
+      {selectedBoost && renderBoostDetails()}
       
       {/* Indicatore di caricamento */}
       {isLoading && (
@@ -487,129 +398,90 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
-  categoriesContainer: {
-    marginVertical: 8,
-  },
-  categoriesList: {
+  headerContainer: {
     paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  categoryButton: {
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+  },
+  boostsContainer: {
+    flex: 1,
+  },
+  boostsList: {
+    padding: 16,
+  },
+  boostCard: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-    borderWidth: 1,
-  },
-  categoryIcon: {
-    marginRight: 4,
-  },
-  categoryText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  featuredContainer: {
+    borderRadius: 12,
     marginBottom: 16,
+    borderWidth: 1,
+    padding: 12,
+    overflow: 'hidden',
   },
-  sectionHeader: {
+  boostIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  boostContent: {
+    flex: 1,
+  },
+  boostTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  boostDescription: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  boostFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 8,
   },
-  sectionTitle: {
-    fontSize: 18,
+  boostPrice: {
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  featuredList: {
-    paddingHorizontal: 16,
+  activateButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
-  featuredCard: {
-    width: 200,
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginRight: 12,
-    borderWidth: 1,
-  },
-  featuredImage: {
-    width: '100%',
-    height: 120,
-  },
-  featuredContent: {
-    padding: 12,
-  },
-  featuredTitle: {
+  activateButtonText: {
+    color: 'white',
     fontSize: 14,
     fontWeight: '500',
-    marginBottom: 4,
   },
-  featuredPrice: {
-    fontSize: 14,
+  activeIndicator: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  activeText: {
+    color: 'white',
+    fontSize: 12,
     fontWeight: 'bold',
   },
-  featuredBadge: {
+  activeBadge: {
     position: 'absolute',
     top: 8,
     right: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  rewardsContainer: {
-    flex: 1,
-  },
-  rewardsList: {
-    paddingHorizontal: 8,
-    paddingBottom: 16,
-  },
-  rewardsRow: {
-    justifyContent: 'space-between',
-  },
-  rewardCard: {
-    width: '48%',
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 16,
-    borderWidth: 1,
-  },
-  rewardImage: {
-    width: '100%',
-    height: 100,
-  },
-  rewardContent: {
-    padding: 12,
-  },
-  rewardTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  rewardDescription: {
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  rewardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  rewardPrice: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  buyButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  buyButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '500',
   },
   detailsContainer: {
     position: 'absolute',
@@ -640,47 +512,74 @@ const styles = StyleSheet.create({
   detailsContent: {
     flex: 1,
   },
-  detailsImage: {
-    width: '100%',
-    height: 200,
+  detailsIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 16,
+    alignSelf: 'center',
   },
   detailsInfo: {
     padding: 16,
   },
   detailsName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 8,
+    textAlign: 'center',
   },
   detailsPrice: {
     fontSize: 18,
     fontWeight: '500',
-    marginBottom: 16,
+    marginBottom: 24,
+    textAlign: 'center',
   },
   detailsDescription: {
     fontSize: 16,
     lineHeight: 24,
-    marginBottom: 16,
+    marginBottom: 24,
+    textAlign: 'center',
   },
-  detailsCategory: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  detailsInfoRow: {
+    flexDirection: 'column',
     marginBottom: 24,
   },
-  detailsCategoryText: {
+  detailsInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  detailsInfoText: {
     marginLeft: 8,
     fontSize: 14,
   },
-  detailsBuyButton: {
+  detailsActivateButton: {
     height: 50,
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  detailsBuyButtonText: {
+  detailsActivateButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  activeBoostBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  activeBoostText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500',
   },
   loadingContainer: {
     position: 'absolute',
